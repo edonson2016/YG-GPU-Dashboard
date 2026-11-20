@@ -183,13 +183,18 @@ function pending(b){
     p.map(j => `<tr><td>${esc(j.person)}</td><td>${esc(j.id)}</td><td class="num">${j.gpus}</td><td>${esc(j.limit)}</td><td>${j.start && j.start !== "N/A" ? esc(new Date(j.start).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"})) : `<span style="color:var(--text-muted)">${esc(j.reason || "unknown")}</span>`}</td></tr>`).join("") || `<tr><td colspan="5">Nothing pending.</td></tr>`}</tbody>`;
 }
 
+function ownerSays(j, nb){
+  const s = j.owner_says, to = (j.lent_to || []).join(", ");
+  if (s === "lendable" && to) return nb > 0 ? `lent to ${esc(to)} · in use` : `lent to ${esc(to)} · idle`;
+  return esc(s || "—");
+}
 function alloc(b){
   const r = [...b.running].sort((a, c) => a.person.localeCompare(c.person) || c.gpus - a.gpus);
   $("#alloc").innerHTML = `<thead><tr><th>Person</th><th>Job</th><th>Node</th><th class="num">GPUs</th><th>GPU duty cycle</th><th>State</th><th>Time left</th><th>Owner says</th></tr></thead><tbody>${
     r.map(j => { const nb = j.gpu.filter(busy).length;
       const cells = j.gpu.map(g => `<span class="cell" style="background:${seq(g.util)}" data-t="${esc(`GPU ${g.i} · ${g.util ?? "?"}% duty · ${g.mem ?? "?"} GiB${g.idle_since ? " · idle since " + fmtT(g.idle_since) : ""}`)}"></span>`).join("");
       const st = j.gpu.length ? (nb === 0 ? `<span class="badge b-idle">idle</span>` : `<span class="badge b-busy">${nb}/${j.gpu.length} in use</span>`) : `<span style="color:var(--text-muted)">no data</span>`;
-      return `<tr><td>${esc(j.person)}</td><td>${esc(j.id)}</td><td>${esc(j.node)}</td><td class="num">${j.gpus}</td><td><div class="cells">${cells}</div></td><td>${st}</td><td>${esc(j.left)}</td><td>${esc(j.owner_says || "—")}</td></tr>`; }).join("")}</tbody>`;
+      return `<tr><td>${esc(j.person)}</td><td>${esc(j.id)}</td><td>${esc(j.node)}</td><td class="num">${j.gpus}</td><td><div class="cells">${cells}</div></td><td>${st}</td><td>${esc(j.left)}</td><td>${ownerSays(j, nb)}</td></tr>`; }).join("")}</tbody>`;
   $("#alloc").querySelectorAll(".cell").forEach(c => { c.addEventListener("mousemove", ev => showTip(ev, esc(c.dataset.t))); c.addEventListener("mouseleave", hideTip); });
 }
 
